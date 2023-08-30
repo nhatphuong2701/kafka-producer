@@ -1,8 +1,6 @@
 package com.demo.kafka;
 
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,12 +19,37 @@ public class ProducerDemo {
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.setProperty(ProducerConfig.ACKS_CONFIG, "1");
 
         KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
-        ProducerRecord<String, String> producerRecord =
-                new ProducerRecord<>("demojava",1, "second_producer","second message");
 
-        producer.send(producerRecord);
+
+
+//        for (int j = 0; j < 10; j++) {
+        for(int i = 0; i < 10; i++) {
+            ProducerRecord<String, String> producerRecord =
+                    new ProducerRecord<>("demojava","my message ");
+
+            producer.send(producerRecord, new Callback() {
+                @Override
+                public void onCompletion(RecordMetadata recordMetadata, Exception e) {
+                    if(e == null) {
+                        log.info("Receive new metadata \n" +
+                                "Topic: " + recordMetadata.topic() + "\n" +
+                                "Partition: " + recordMetadata.partition() + "\n" +
+                                "Offset: " + recordMetadata.offset() + "\n" +
+                                "Timestamp: " + recordMetadata.timestamp());
+                    } else {
+                        log.error("Error while producing", e);
+                    }
+                }
+            });
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
         producer.flush();
 
